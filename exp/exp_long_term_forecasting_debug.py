@@ -77,8 +77,12 @@ class Exp_Long_Term_Forecast_Debug(Exp_Basic_Debug):
         return total_loss
 
     def train(self, setting):
+        setting="test"
+        print("Current stage:", "train")
         train_data, train_loader = self._get_data(flag='train')
+        print("Current stage:", "val")
         vali_data, vali_loader = self._get_data(flag='val')
+        print("Current stage:", "test")
         test_data, test_loader = self._get_data(flag='test')
 
         path = os.path.join(self.parser.checkpoints, setting)

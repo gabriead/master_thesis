@@ -1,0 +1,4 @@
+
+1 Check split of train/test/val data!
+2 Still two for loops remove one!
+3 Clean test/val/train strategy

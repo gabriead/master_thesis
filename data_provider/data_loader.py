@@ -110,7 +110,9 @@ class SimulaTimeSeries(Dataset):
 
         #df_simula_data = self.create_normalized_raw_data_features_and_target(df_raw, self.column_names, self.n_in,self.n_out)
 
-        df_stamp = df_raw[['date']][border1:border2]
+        #df_stamp = df_raw[['date']][border1:border2]
+        df_stamp = self.timestamp_data[['date']]
+
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
@@ -134,7 +136,6 @@ class SimulaTimeSeries(Dataset):
         else:
             self.data_x = self.X_val
             self.data_y = self.y_val
-
 
         #num_features = len(df_simula_data.columns.tolist())
         #raw_data_features = df_simula_data.columns.tolist()[:(self.n_in * num_features)]
@@ -243,14 +244,25 @@ class SimulaTimeSeries(Dataset):
         val = df_val[columnNames]
 
         train = train.reset_index(drop=True)
+        train["dataset"] = ["train_set" for _ in range(0,len(train))]
         test = test.reset_index(drop=True)
+        test["dataset"] = ["test_set" for _ in range(0,len(test))]
         val = val.reset_index(drop=True)
+        val["dataset"] = ["val_set" for _ in range(0,len(val))]
         num_features = len(train.columns.tolist())
 
+        concat = pd.concat([train, test, val], ignore_index=True)
+        #self.timestamp_data = concat
+        self.timestamp_data = concat[concat["dataset"] == "train_set"]
+
+        column_names = ["readiness", "daily_load", "fatigue", "mood", "sleep_duration", "sleep_quality",
+                        "soreness",
+                        "stress"]
+
         train_scalar = StandardScaler()
-        train_transformed = train_scalar.fit_transform(train)
-        test_transformed = train_scalar.transform(test)
-        val_transformed = train_scalar.transform(val)
+        train_transformed = train_scalar.fit_transform(train[column_names])
+        test_transformed = train_scalar.transform(test[column_names])
+        val_transformed = train_scalar.transform(val[column_names])
 
         train_direct = self.series_to_supervised(train_transformed.copy(), n_in, n_out)
         test_direct = self.series_to_supervised(test_transformed.copy(), n_in, n_out)

@@ -5,17 +5,6 @@ from torch.utils.data import DataLoader
 
 data_dict = {
     'ETTh1': Dataset_ETT_hour,
-    'ETTh2': Dataset_ETT_hour,
-    'ETTm1': Dataset_ETT_minute,
-    'ETTm2': Dataset_ETT_minute,
-    'custom': Dataset_Custom,
-    'm4': Dataset_M4,
-    'PSM': PSMSegLoader,
-    'MSL': MSLSegLoader,
-    'SMAP': SMAPSegLoader,
-    'SMD': SMDSegLoader,
-    'SWAT': SWATSegLoader,
-    'UEA': UEAloader,
     'SimulaTimeSeries': SimulaTimeSeries
 }
 
@@ -82,29 +71,12 @@ def data_provider(args, flag):
                 timeenc=timeenc,
                 freq=freq,
                 seasonal_patterns=args.seasonal_patterns,
-                column_names = ["a","b"],
+                column_names =["date","readiness", "daily_load", "fatigue", "mood", "sleep_duration", "sleep_quality", "soreness",
+                   "stress"],
                 player_index = args.player_index,
                 n_in = 1,
                 n_out = 2
             )
-
-
-
-        if args.data == 'm4':
-            drop_last = False
-        data_set = Data(
-            root_path=args.root_path,
-            data_path=args.data_path,
-            flag=flag,
-            size=[args.seq_len, args.label_len, args.pred_len],
-            features=args.features,
-            target=args.target,
-            timeenc=timeenc,
-            freq=freq,
-            seasonal_patterns=args
-            .seasonal_patterns
-        )
-
 
 
         print(flag, len(data_set))
