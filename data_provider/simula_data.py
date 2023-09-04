@@ -15,6 +15,9 @@ class SimulaTimeSeries(Dataset):
 
         self.column_names = column_names
         self.player_index = player_index
+        self.train_players = []
+        self.test_player = []
+        self.val_player = []
 
         if data.ndim == 1:
             data = data.reshape(-1, 1)
@@ -26,17 +29,6 @@ class SimulaTimeSeries(Dataset):
         self.start_indices_train_test_val =[]
         self.end_indices_train_test_val = []
 
-        self.create_train_test_val_data(self.data, self.column_names, n_in, n_out, self.player_index)
-
-        if flag == "train":
-            self.data = self.X_train
-            self.y = self.y_train
-        elif flag == "val":
-            self.data = self.X_val
-            self.y = self.y_val
-        elif flag == "test":
-            self.data = self.X_test
-            self.y = self.y_test
 
         #############################################################################################################
 
@@ -63,43 +55,52 @@ class SimulaTimeSeries(Dataset):
 
         self.root_path = root_path
         self.data_path = data_path
-        self.__read_data__()
+        #self.__read_data__()
 
-    # Prepares train/test/val data according to the type
-    def __read_data__(self):
-        #self.scaler = StandardScaler()
-        #df_raw = pd.read_csv(os.path.join(self.root_path,
+    def create_train_test_data(self):
+
+        if self.flag == "train":
+            self.data = self.X_train
+            self.y = self.y_train
+        elif self.flag == "val":
+            self.data = self.X_val
+            self.y = self.y_val
+        elif self.flag == "test":
+            self.data = self.X_test
+            self.y = self.y_test
+        # self.scaler = StandardScaler()
+        # df_raw = pd.read_csv(os.path.join(self.root_path,
         #                                  self.data_path))
 
-        #read complete data per teamA/teamB
-        #df_raw = pd.read_pickle(os.path.join(self.root_path,self.data_path))
+        # read complete data per teamA/teamB
+        # df_raw = pd.read_pickle(os.path.join(self.root_path,self.data_path))
 
-        #[start_train_index, start_test_index, start_val_index]
-        #border1s = [0, 12 * 30 * 24 - self.seq_len, 12 * 30 * 24 + 4 * 30 * 24 - self.seq_len]
+        # [start_train_index, start_test_index, start_val_index]
+        # border1s = [0, 12 * 30 * 24 - self.seq_len, 12 * 30 * 24 + 4 * 30 * 24 - self.seq_len]
 
         # [end_train_index, end_test_index, end_val_index]
-        #border2s = [12 * 30 * 24, 12 * 30 * 24 + 4 * 30 * 24, 12 * 30 * 24 + 8 * 30 * 24]
+        # border2s = [12 * 30 * 24, 12 * 30 * 24 + 4 * 30 * 24, 12 * 30 * 24 + 8 * 30 * 24]
 
-        #border1 = border1s[self.set_type]
-        #border2 = border2s[self.set_type]
+        # border1 = border1s[self.set_type]
+        # border2 = border2s[self.set_type]
 
-        #simula variation
+        # simula variation
 
-        #First column is date!!!!
-        #if self.features == 'M' or self.features == 'MS':
+        # First column is date!!!!
+        # if self.features == 'M' or self.features == 'MS':
         #    cols_data = df_raw.columns[1:]
         #    df_data = df_raw[cols_data]
-        #elif self.features == 'S':
+        # elif self.features == 'S':
         #    df_data = df_raw[[self.target]]
 
-#        if self.scale:
-#            train_data = df_data[border1s[0]:border2s[0]]
-#            self.scaler.fit(train_data.values)
-#            data = self.scaler.transform(df_data.values)
-#        else:
-#            data = df_data.values
+        #        if self.scale:
+        #            train_data = df_data[border1s[0]:border2s[0]]
+        #            self.scaler.fit(train_data.values)
+        #            data = self.scaler.transform(df_data.values)
+        #        else:
+        #            data = df_data.values
 
-        #df_simula_data = self.create_normalized_raw_data_features_and_target(df_raw, self.column_names, self.n_in,self.n_out)
+        # df_simula_data = self.create_normalized_raw_data_features_and_target(df_raw, self.column_names, self.n_in,self.n_out)
 
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
@@ -113,30 +114,37 @@ class SimulaTimeSeries(Dataset):
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
 
-        #train
+        # train
         if self.set_type == 0:
             self.data_x = self.X_train
             self.data_y = self.y_train
-        #test
+        # test
         elif self.set_type == 1:
             self.data_x = self.X_test
             self.data_y = self.y_test
-        #val
+        # val
         else:
             self.data_x = self.X_val
             self.data_y = self.y_val
 
+        # num_features = len(df_simula_data.columns.tolist())
+        # raw_data_features = df_simula_data.columns.tolist()[:(self.n_in * num_features)]
+        # raw_data_targets = df_simula_data.columns.tolist()[(self.n_in * num_features):]
 
-        #num_features = len(df_simula_data.columns.tolist())
-        #raw_data_features = df_simula_data.columns.tolist()[:(self.n_in * num_features)]
-        #raw_data_targets = df_simula_data.columns.tolist()[(self.n_in * num_features):]
+        self.data_x = self.data_x  # df_simula_data[border1:border2]
+        self.data_y = self.data_y  # df_simula_data[border1:border2]
 
-
-        self.data_x = self.data_x#df_simula_data[border1:border2]
-        self.data_y = self.data_y#df_simula_data[border1:border2]
-
-        #only date column
+        # only date column
         self.data_stamp = data_stamp
+
+    # Prepares train/test/val data according to the type
+    def __read_data__(self):
+
+        self.create_player_sets(self.data, self.player_index)
+        self.create_train_test_val_splits(self.data, self.column_names, self.n_in, self.n_out)
+        #self.create_train_test_data()
+
+
 
     def __getitem__(self, index):
         s_begin = index
@@ -198,27 +206,44 @@ class SimulaTimeSeries(Dataset):
 
         return agg
 
-
-    def create_train_test_val_data(self, df, columnNames, n_in, n_out, player_index):
-        players = list(df['player_name_x'].unique())
+    import random
+    def create_player_sets(self):
+        players = list(self.data['player_name_x'].unique())
 
         print("amount of players to train each config: ", len(players))
 
-        current_player = players[player_index]
-        test_players = players.copy()
+        #        for i in range(nr_players):
+        #            print(str(i) + "/" + str(len(players)))
+        #            all_but_one = players[:i] + players[i + 1:]
+        #            train = df[df['player_name_x'].isin(all_but_one)]
+        #            test = df.loc[df['player_name_x'] == players[i]]
 
-        #TODO: double check if that really works !!
-        test_players.remove(current_player)
-        val_player = random.choice(test_players)
-        test_players.remove(val_player)
+        test_player = players[self.player_index]
+        training_players = [player for player in players if player != test_player]
+        random.shuffle(training_players)
+        eval_player = random.choice(training_players)
+        training_players.remove(eval_player)
 
-        df_train = df[df['player_name_x'].isin(players)]
-        df_test = df[df['player_name_x'].isin(test_players)]
-        df_val = df[df['player_name_x'].isin([val_player])]
+        # train on all but the current player
+        # test on current player
+        # val on on of the players from the training
 
-        train = df_train[columnNames]
-        test = df_test[columnNames]
-        val = df_val[columnNames]
+        self.training_players = training_players
+        self.test_player=test_player
+        self.eval_player = eval_player
+
+        return training_players, test_player, eval_player
+
+
+    def create_train_test_val_splits(self):
+
+        df_train = self.data[self.data['player_name_x'].isin(self.training_players)]
+        df_test = self.data[self.data['player_name_x'].isin([self.test_player])]
+        df_val = self.data[self.data['player_name_x'].isin([self.eval_player])]
+
+        train = df_train[self.column_names]
+        test = df_test[self.column_names]
+        val = df_val[self.column_names]
 
         train = train.reset_index(drop=True)
         test = test.reset_index(drop=True)
@@ -230,19 +255,21 @@ class SimulaTimeSeries(Dataset):
         test_transformed = train_scalar.transform(test)
         val_transformed = train_scalar.transform(val)
 
-        train_direct = self.series_to_supervised(train_transformed.copy(), n_in, n_out)
-        test_direct = self.series_to_supervised(test_transformed.copy(), n_in, n_out)
-        val_direct = self.series_to_supervised(val_transformed.copy(), n_in, n_out)
+        train_direct = self.series_to_supervised(train_transformed.copy(), self.n_in, self.n_out)
+        test_direct = self.series_to_supervised(test_transformed.copy(), self.n_in, self.n_out)
+        val_direct = self.series_to_supervised(val_transformed.copy(), self.n_in, self.n_out)
 
-        features = train_direct.columns.tolist()[:(n_in * num_features)]
-        targets = test_direct.columns.tolist()[(n_in * num_features):]
+        feature_columns = train_direct.columns.tolist()[:(self.n_in * num_features)]
+        target_columns = test_direct.columns.tolist()[(self.n_in * num_features):]
 
-        self.X_train = train_direct[features]
-        self.y_train = train_direct[targets]
-        self.X_test = test_direct[features]
-        self.y_test = test_direct[targets]
-        self.X_val = val_direct[features]
-        self.y_val = val_direct[targets]
+        self.X_train = train_direct[feature_columns]
+        self.y_train = train_direct[target_columns]
+        self.X_test = test_direct[feature_columns]
+        self.y_test = test_direct[target_columns]
+        self.X_val = val_direct[feature_columns]
+        self.y_val = val_direct[target_columns]
+
+        return self.X_train, self.y_train, self.X_test, self.y_test, self.X_val, self.y_val, target_columns, feature_columns
 
 
 

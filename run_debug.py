@@ -56,7 +56,7 @@ if __name__ == '__main__':
     parser.dropout = 0.1
     parser.activation = 'gelu'
     parser.batch_size = 32
-    parser.data_path = 'complete_dataset'
+    parser.data_path = 'complete_dataset.csv'
     parser.target = 'OT'
     parser.seasonal_patterns = 'Monthly'
     parser.num_workers = 10
