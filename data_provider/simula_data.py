@@ -18,6 +18,7 @@ class SimulaTimeSeries(Dataset):
         self.train_players = []
         self.test_player = []
         self.val_player = []
+        self.flag = flag
 
         if data.ndim == 1:
             data = data.reshape(-1, 1)
@@ -25,9 +26,6 @@ class SimulaTimeSeries(Dataset):
         self.data = data.copy()
         self.n_in = n_in
         self.n_out = n_out
-
-        self.start_indices_train_test_val =[]
-        self.end_indices_train_test_val = []
 
 
         #############################################################################################################
@@ -53,6 +51,10 @@ class SimulaTimeSeries(Dataset):
         self.timeenc = timeenc
         self.freq = freq
 
+        self.train_date_column = []
+        self.test_date_column = []
+        self.val_date_column = []
+
         self.root_path = root_path
         self.data_path = data_path
         #self.__read_data__()
@@ -68,6 +70,7 @@ class SimulaTimeSeries(Dataset):
         elif self.flag == "test":
             self.data = self.X_test
             self.y = self.y_test
+
         # self.scaler = StandardScaler()
         # df_raw = pd.read_csv(os.path.join(self.root_path,
         #                                  self.data_path))
@@ -102,48 +105,42 @@ class SimulaTimeSeries(Dataset):
 
         # df_simula_data = self.create_normalized_raw_data_features_and_target(df_raw, self.column_names, self.n_in,self.n_out)
 
-        df_stamp = df_raw[['date']][border1:border2]
+        df_stamp = pd.DataFrame()
+        # train
+        if self.flag == "train":
+            self.data_x = self.X_train
+            self.data_y = self.y_train
+            df_stamp["date"] = self.train_date_column
+        # test
+        elif self.flag == "test":
+            self.data_x = self.X_test
+            self.data_y = self.y_test
+            df_stamp["date"] = self.test_date_column
+        # val
+        else:
+            self.data_x = self.X_val
+            self.data_y = self.y_val
+            df_stamp["date"] = self.val_date_column
+
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
             df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
             df_stamp['weekday'] = df_stamp.date.apply(lambda row: row.weekday(), 1)
             df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
-            data_stamp = df_stamp.drop(['date'], 1).values
+            data_stamp = df_stamp.drop(['date'], axis=1).values
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
-
-        # train
-        if self.set_type == 0:
-            self.data_x = self.X_train
-            self.data_y = self.y_train
-        # test
-        elif self.set_type == 1:
-            self.data_x = self.X_test
-            self.data_y = self.y_test
-        # val
-        else:
-            self.data_x = self.X_val
-            self.data_y = self.y_val
-
-        # num_features = len(df_simula_data.columns.tolist())
-        # raw_data_features = df_simula_data.columns.tolist()[:(self.n_in * num_features)]
-        # raw_data_targets = df_simula_data.columns.tolist()[(self.n_in * num_features):]
-
-        self.data_x = self.data_x  # df_simula_data[border1:border2]
-        self.data_y = self.data_y  # df_simula_data[border1:border2]
 
         # only date column
         self.data_stamp = data_stamp
 
     # Prepares train/test/val data according to the type
     def __read_data__(self):
-
-        self.create_player_sets(self.data, self.player_index)
-        self.create_train_test_val_splits(self.data, self.column_names, self.n_in, self.n_out)
-        #self.create_train_test_data()
-
+        self.create_player_sets()
+        self.create_train_test_val_splits()
+        self.create_train_test_data()
 
 
     def __getitem__(self, index):
@@ -245,6 +242,14 @@ class SimulaTimeSeries(Dataset):
         test = df_test[self.column_names]
         val = df_val[self.column_names]
 
+        self.train_date_column = train["date"]
+        self.test_date_column = test["date"]
+        self.val_date_column = val["date"]
+
+        train.drop("date", axis=1, inplace=True)
+        test.drop("date", axis=1, inplace=True)
+        val.drop("date",axis=1, inplace=True)
+
         train = train.reset_index(drop=True)
         test = test.reset_index(drop=True)
         val = val.reset_index(drop=True)
@@ -264,8 +269,10 @@ class SimulaTimeSeries(Dataset):
 
         self.X_train = train_direct[feature_columns]
         self.y_train = train_direct[target_columns]
+
         self.X_test = test_direct[feature_columns]
         self.y_test = test_direct[target_columns]
+
         self.X_val = val_direct[feature_columns]
         self.y_val = val_direct[target_columns]
 

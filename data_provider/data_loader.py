@@ -35,7 +35,7 @@ class SimulaTimeSeries(Dataset):
         self.start_indices_train_test_val =[]
         self.end_indices_train_test_val = []
 
-        self.create_train_test_val_data(self.data, self.column_names, n_in, n_out, self.player_index)
+        #self.create_train_test_val_data(self.data, self.column_names, n_in, n_out, self.player_index)
 
         if flag == "train":
             self.data = self.X_train
