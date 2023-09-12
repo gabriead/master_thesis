@@ -1,3 +1,4 @@
 
-1 check date_x/date_y mark
+
+1 check date_x/date_y mark => dates for x and y
 3 make read_date easier

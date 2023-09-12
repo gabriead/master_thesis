@@ -1,4 +1,6 @@
 import random
+from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
@@ -29,7 +31,13 @@ class SimulaTimeSeries(Dataset):
         self.n_in = n_in
         self.n_out = n_out
         self.sequence_length = sequence_length
+        self.train_x_date_column = []
+        self.test_x_date_column = []
+        self.val_x_date_column = []
 
+        self.train_y_date_column = []
+        self.test_y_date_column = []
+        self.val_y_date_column = []
 
         #############################################################################################################
 
@@ -151,13 +159,29 @@ class SimulaTimeSeries(Dataset):
         seq_x = self.data.iloc[index, :]
         seq_y = self.y.iloc[index, :]
 
+        date_x_mark =[]
+        date_y_mark = []
 
         #double check here
+        if self.flag == "train":
+            date_x_mark = self.train_x_date_column
+            date_y_mark = self.train_y_date_column
+        # test
+        elif self.flag == "test":
+            date_x_mark = self.test_x_date_column
+            date_y_mark = self.test_y_date_column
+        # val
+        else:
+            date_x_mark = self.val_x_date_column
+            date_y_mark = self.val_y_date_column
+
         date_y_mark = self.data_stamp.iloc[index, :]
         date_x_mark = self.data_stamp.iloc[index, :]
 
         seq_x = torch.tensor(seq_x.values, device = ('gpu')).float()
         seq_y = torch.tensor(seq_y.values, device = ('gpu')).float()
+
+        #what are the types of date_x_mark, date_y_mark
 
         return seq_x, seq_y, date_x_mark, date_y_mark
 
@@ -221,6 +245,38 @@ class SimulaTimeSeries(Dataset):
 
         return training_players, test_player, eval_player
 
+    def subtract_days_from_date(self,date, days):
+        """Subtract days from a date and return the date.
+
+        Args:
+            date (string): Date string in YYYY-MM-DD format.
+            days (int): Number of days to subtract from date
+
+        Returns:
+            date (date): Date in YYYY-MM-DD with X days subtracted.
+        """
+
+        subtracted_date = pd.to_datetime(date) - timedelta(days=days)
+        subtracted_date = subtracted_date.strftime("%Y-%m-%d")
+
+        return subtracted_date
+
+    def add_days_to_date(self,date, days):
+        """Add days to a date and return the date.
+
+        Args:
+            date (string): Date string in YYYY-MM-DD format.
+            days (int): Number of days to add to date
+
+        Returns:
+            date (date): Date in YYYY-MM-DD with X days added.
+        """
+
+        added_date = pd.to_datetime(date) + timedelta(days=days)
+        added_date = added_date.strftime("%Y-%m-%d")
+
+        return added_date
+
 
     def create_train_test_val_splits(self):
 
@@ -235,6 +291,14 @@ class SimulaTimeSeries(Dataset):
         self.train_date_column = train["date"]
         self.test_date_column = test["date"]
         self.val_date_column = val["date"]
+
+        self.train_x_date_column = [self.subtract_days_from_date(current_date, self.n_in) for current_date in self.train_date_column.to_list()]
+        self.test_x_date_column = [self.subtract_days_from_date(current_date, self.n_in) for current_date in self.test_date_column.to_list()]
+        self.val_x_date_column = [self.subtract_days_from_date(current_date, self.n_in) for current_date in self.val_date_column.to_list()]
+
+        self.train_y_date_column = [self.add_days_to_date(current_date, self.n_out) for current_date in self.train_date_column.to_list()]
+        self.test_y_date_column = [self.add_days_to_date(current_date, self.n_out) for current_date in self.test_date_column.to_list()]
+        self.val_y_date_column =[self.add_days_to_date(current_date, self.n_out) for current_date in self.val_date_column.to_list()]
 
         train.drop("date", axis=1, inplace=True)
         test.drop("date", axis=1, inplace=True)

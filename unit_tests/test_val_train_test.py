@@ -82,8 +82,9 @@ class MyTestCase(unittest.TestCase):
         data = df
         n_in = 1
         n_out = 7
+        TRAIN_FLAG = "train"
         simulaData = simula_data.SimulaTimeSeries(column_names=column_names, player_index=player_index, data=data,
-                                                  n_in=n_in, n_out=n_out,root_path=root_path, flag="train" )
+                                                  n_in=n_in, n_out=n_out, root_path=root_path, flag=TRAIN_FLAG)
         training_players, test_player, eval_player = simulaData.create_player_sets()
 
         self.assertEqual(len(training_players),23)
@@ -105,6 +106,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(len(y_val.columns.tolist()), len(target_columns))
 
         data_x, data_y, data_stamp = simulaData.create_train_test_data()
+        pass
 
 
     def test_create_test_data(self):
@@ -122,8 +124,9 @@ class MyTestCase(unittest.TestCase):
         data = df
         n_in = 1
         n_out = 7
+        TEST_FLAG = "test"
         simulaData = simula_data.SimulaTimeSeries(column_names=column_names, player_index=player_index, data=data,
-                                                  n_in=n_in, n_out=n_out,root_path=root_path, flag="train" )
+                                                  n_in=n_in, n_out=n_out, root_path=root_path, flag=TEST_FLAG)
         training_players, test_player, eval_player = simulaData.create_player_sets()
 
         self.assertEqual(len(training_players),23)
@@ -162,8 +165,9 @@ class MyTestCase(unittest.TestCase):
         data = df
         n_in = 1
         n_out = 7
+        VAL_FLAG = "val"
         simulaData = simula_data.SimulaTimeSeries(column_names=column_names, player_index=player_index, data=data,
-                                                  n_in=n_in, n_out=n_out,root_path=root_path, flag="train" )
+                                                  n_in=n_in, n_out=n_out, root_path=root_path, flag=VAL_FLAG)
         training_players, test_player, eval_player = simulaData.create_player_sets()
 
         self.assertEqual(len(training_players),23)
