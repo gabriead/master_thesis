@@ -1,16 +1,17 @@
 import random
 import numpy as np
 import pandas as pd
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from sklearn.preprocessing import StandardScaler
-import os
 from utils.timefeatures import time_features
+import torch
 
 
 class SimulaTimeSeries(Dataset):
 
+    #check sequence length with Cise (less then 7 makes no sense?)
     def __init__(self, column_names, player_index, data, n_in, n_out, root_path, flag='train', size=None,
-                 features='S', data_path='team_a_complete',
+                 features='S', data_path='team_a_complete', sequence_length=7,
                  target='OT', scale=True, timeenc=0, freq='h', seasonal_patterns=None):
 
         self.column_names = column_names
@@ -19,13 +20,15 @@ class SimulaTimeSeries(Dataset):
         self.test_player = []
         self.val_player = []
         self.flag = flag
+        self.seasonal_patterns = seasonal_patterns
 
-        if data.ndim == 1:
-            data = data.reshape(-1, 1)
+        #if data.ndim == 1:
+        #    data = data.reshape(-1, 1)
 
         self.data = data.copy()
         self.n_in = n_in
         self.n_out = n_out
+        self.sequence_length = sequence_length
 
 
         #############################################################################################################
@@ -57,19 +60,10 @@ class SimulaTimeSeries(Dataset):
 
         self.root_path = root_path
         self.data_path = data_path
-        #self.__read_data__()
+        self.__read_data__()
 
     def create_train_test_data(self):
 
-        if self.flag == "train":
-            self.data = self.X_train
-            self.y = self.y_train
-        elif self.flag == "val":
-            self.data = self.X_val
-            self.y = self.y_val
-        elif self.flag == "test":
-            self.data = self.X_test
-            self.y = self.y_test
 
         # self.scaler = StandardScaler()
         # df_raw = pd.read_csv(os.path.join(self.root_path,
@@ -103,8 +97,6 @@ class SimulaTimeSeries(Dataset):
         #        else:
         #            data = df_data.values
 
-        # df_simula_data = self.create_normalized_raw_data_features_and_target(df_raw, self.column_names, self.n_in,self.n_out)
-
         df_stamp = pd.DataFrame()
         # train
         if self.flag == "train":
@@ -136,49 +128,47 @@ class SimulaTimeSeries(Dataset):
         # only date column
         self.data_stamp = data_stamp
 
+        return self.data_x, self.data_y, self.data_stamp
+
     # Prepares train/test/val data according to the type
     def __read_data__(self):
         self.create_player_sets()
         self.create_train_test_val_splits()
-        self.create_train_test_data()
+        data_x_, data_y_, data_stamp_ = self.create_train_test_data()
 
 
     def __getitem__(self, index):
-        s_begin = index
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
+        #s_begin = index
+        #s_end = s_begin + self.seq_len
+        #r_begin = s_end - self.label_len
+        #r_end = r_begin + self.label_len + self.pred_len
 
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
+        #seq_x = self.data_x[s_begin:s_end]
+        #seq_y = self.data_y[r_begin:r_end]
+        #date_x_mark = self.data_stamp[s_begin:s_end]
+        #date_y_mark = self.data_stamp[r_begin:r_end]
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        seq_x = self.data.iloc[index, :]
+        seq_y = self.y.iloc[index, :]
+
+
+        #double check here
+        date_y_mark = self.data_stamp.iloc[index, :]
+        date_x_mark = self.data_stamp.iloc[index, :]
+
+        seq_x = torch.tensor(seq_x.values, device = ('gpu')).float()
+        seq_y = torch.tensor(seq_y.values, device = ('gpu')).float()
+
+        return seq_x, seq_y, date_x_mark, date_y_mark
 
     def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
 
-
-    def __len_simula__(self):
         return len(self.data)
+        #return len(self.data_x) - self.seq_len - self.pred_len + 1
 
-
-    def __getitem_simula__(self, idx):
-        x = self.data.iloc[idx, :]
-        y = self.y.iloc[idx, :]
-
-        x_transformed = x.reset_index().drop(["index"], axis=1).to_numpy()
-        y_transformed = y.reset_index().drop(["index"], axis=1).to_numpy()
-
-        x_transformed = x_transformed.astype(np.float32)
-        y_transformed = y_transformed.astype(np.float32)
-
-        return x_transformed, y_transformed
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
-
 
 
     def series_to_supervised(self, data, n_in=1, n_out=1, dropnan=True):
